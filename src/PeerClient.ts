@@ -12,7 +12,7 @@ export class PeerClient {
 
   constructor() {
     this.peer = new Peer(undefined as unknown as string, {
-      host: 'peerjs.com',
+      host: '0.peerjs.com',
       secure: true,
       port: 443
     });

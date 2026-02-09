@@ -56,17 +56,18 @@ Build locally:
 npm run build
 ```
 
-Then deploy the `dist/` folder to GitHub Pages using your preferred method.
+Then deploy the `docs/` folder to GitHub Pages using your preferred method.
 
 ### Configuration notes
 
-- **Base path**: `vite.config.ts` is configured with `base: '/facial-avatar-thesis/'` for deployment to a project repository
+- **Build output**: `vite.config.ts` is configured to output to `docs/` (GitHub Pages standard)
+- **Base path**: `base: '/facial-avatar-thesis/'` for deployment to a project repository
 - **User/Org site**: If deploying to `your-username.github.io/`, change `base: '/'` in `vite.config.ts`
 - **HTTPS**: GitHub Pages provides HTTPS automatically, which is required for camera and microphone access
 
 ## Build
 
 ```bash
-npm run build  # Outputs to dist/
+npm run build  # Outputs to docs/
 npm run preview  # Preview production build locally
 ```
