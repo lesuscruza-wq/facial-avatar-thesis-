@@ -104,43 +104,18 @@ export class FaceTracker implements LandmarkStream {
   public async init(): Promise<void> {
     this.dispose();
 
-    // Load FaceMesh from CDN to ensure correct module resolution
     const cdnBase = 'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/';
-    
-    // Load the main module from CDN
-    const scriptUrl = cdnBase + 'face_mesh.js';
-    
-    // Use dynamic import with a timeout fallback
-    let FaceMeshClass;
-    try {
-      // Try to import from the bundled module first
-      const module = await import('@mediapipe/face_mesh');
-      FaceMeshClass = (module as any).FaceMesh || module.default;
-    } catch (e) {
-      // Fallback: load from global window object if available
-      if ((window as any).FaceMesh) {
-        FaceMeshClass = (window as any).FaceMesh;
-      } else {
-        // Last resort: load the script dynamically
-        await new Promise<void>((resolve, reject) => {
-          const script = document.createElement('script');
-          script.src = scriptUrl;
-          script.onload = () => {
-            FaceMeshClass = (window as any).FaceMesh;
-            if (!FaceMeshClass) {
-              reject(new Error('FaceMesh not found after script load'));
-            } else {
-              resolve();
-            }
-          };
-          script.onerror = () => reject(new Error(`Failed to load ${scriptUrl}`));
-          document.head.appendChild(script);
-        });
-      }
-    }
 
+    // Load MediaPipe camera-utils first (needed for FaceMesh)
+    await this.loadScript(cdnBase + 'camera_utils.js');
+    
+    // Load FaceMesh library
+    await this.loadScript(cdnBase + 'face_mesh.js');
+
+    // Get FaceMesh from global window object
+    const FaceMeshClass = (window as any).FaceMesh;
     if (!FaceMeshClass) {
-      throw new Error('Failed to load FaceMesh from @mediapipe/face_mesh');
+      throw new Error('Failed to load FaceMesh: window.FaceMesh is not defined');
     }
 
     const faceMesh = new FaceMeshClass({
@@ -157,6 +132,26 @@ export class FaceTracker implements LandmarkStream {
 
     faceMesh.onResults((results: Results) => this.onResults(results));
     this.faceMesh = faceMesh;
+  }
+
+  private loadScript(src: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      // Check if script is already loaded
+      const existing = document.querySelector(`script[src="${src}"]`);
+      if (existing && (window as any).FaceMesh) {
+        resolve();
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = src;
+      script.async = true;
+      
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error(`Failed to load script: ${src}`));
+      
+      document.head.appendChild(script);
+    });
   }
 
   public dispose(): void {
