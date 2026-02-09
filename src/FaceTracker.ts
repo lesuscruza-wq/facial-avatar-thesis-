@@ -3,6 +3,9 @@ import type { NormalizedLandmark, Results } from '@mediapipe/face_mesh';
 
 export const FACEMESH_LANDMARK_COUNT = 468;
 
+// Adjustable vertical offset (higher = avatar moves up). Tweak this value as needed.
+export const FACE_VERTICAL_OFFSET = 0.90;
+
 export interface FaceTrackerOptions {
   // Temporal smoothing of landmark positions to reduce jitter.
   // 0 = no smoothing, 0.7–0.9 = stable but responsive.
@@ -236,7 +239,7 @@ export class FaceTracker implements LandmarkStream {
     const centerZ = -lmCenter.z;
 
     const rawCx = centerX * rawScale;
-    const rawCy = centerY * rawScale + 0.40; // Stronger upward offset for better vertical centering
+    const rawCy = centerY * rawScale + FACE_VERTICAL_OFFSET; // Use adjustable offset constant
     const rawCz = centerZ * rawScale;
 
     // Smooth the pose normalization parameters to reduce visible jitter in scale/translation.
