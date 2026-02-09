@@ -236,7 +236,7 @@ export class FaceTracker implements LandmarkStream {
     const centerZ = -lmCenter.z;
 
     const rawCx = centerX * rawScale;
-    const rawCy = centerY * rawScale;
+    const rawCy = centerY * rawScale + 0.25; // Offset upward to center vertically in frame
     const rawCz = centerZ * rawScale;
 
     // Smooth the pose normalization parameters to reduce visible jitter in scale/translation.
