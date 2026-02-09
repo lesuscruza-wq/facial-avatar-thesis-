@@ -80,6 +80,11 @@ const avatar = new AvatarRenderer(meshBuilder, {
 });
 
 renderer.scene.add(avatar.mesh);
+// Ensure avatar is exactly centered in world space; tweak `y` for fine vertical placement.
+avatar.mesh.position.set(0, 0, 0);
+// Example adjustments (uncomment to nudge):
+// avatar.mesh.position.y = 0.15; // slightly up
+// avatar.mesh.position.y = -0.15; // slightly down
 
 // Face tracking
 const videoInput = new VideoInput();

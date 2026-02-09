@@ -6,7 +6,6 @@ export const FACEMESH_LANDMARK_COUNT = 468;
 // Adjustable vertical offset (higher = avatar moves up). Tweak this value as needed.
 // Start with a stronger offset; increase if avatar still sits too low in the viewport.
 // Negative values move the avatar down; make it strongly negative for "super abajo".
-export const FACE_VERTICAL_OFFSET = -2.00;
 
 export interface FaceTrackerOptions {
   // Temporal smoothing of landmark positions to reduce jitter.
@@ -241,7 +240,7 @@ export class FaceTracker implements LandmarkStream {
     const centerZ = -lmCenter.z;
 
     const rawCx = centerX * rawScale;
-    const rawCy = centerY * rawScale + FACE_VERTICAL_OFFSET; // Use adjustable offset constant
+    const rawCy = centerY * rawScale;
     const rawCz = centerZ * rawScale;
 
     // Smooth the pose normalization parameters to reduce visible jitter in scale/translation.

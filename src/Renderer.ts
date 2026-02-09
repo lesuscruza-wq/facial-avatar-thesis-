@@ -14,7 +14,7 @@ export interface RendererOptions {
 export class Renderer {
   public readonly three: THREE.WebGLRenderer;
   public readonly scene: THREE.Scene;
-  public readonly camera: THREE.PerspectiveCamera;
+  public readonly camera: THREE.OrthographicCamera;
   private readonly canvas: HTMLCanvasElement;
 
   private readonly fpsEl: HTMLElement | undefined;
@@ -46,11 +46,10 @@ export class Renderer {
 
     this.scene = new THREE.Scene();
 
-    // Camera tuned for a "portrait" face framing:
-    // - moderate FOV reduces perspective distortion
-    // - near plane is tight for better depth precision around the face
-    this.camera = new THREE.PerspectiveCamera(35, 1, 0.02, 50);
-    this.camera.position.set(0, 0.06, 2.0);
+    // Use an orthographic camera so the avatar placement is stable and UI-like.
+    const aspect = canvas.width / Math.max(1, canvas.height);
+    this.camera = new THREE.OrthographicCamera(-aspect, aspect, 1, -1, 0.1, 10);
+    this.camera.position.set(0, 0, 2.0);
     this.camera.lookAt(0, 0, 0);
 
     this.addDefaultLights();
@@ -87,7 +86,12 @@ export class Renderer {
     const w = Math.max(1, Math.floor(width));
     const h = Math.max(1, Math.floor(height));
 
-    this.camera.aspect = w / h;
+    // For orthographic camera update left/right based on aspect while keeping top/bottom fixed.
+    const aspect = w / h;
+    this.camera.left = -aspect;
+    this.camera.right = aspect;
+    this.camera.top = 1;
+    this.camera.bottom = -1;
     this.camera.updateProjectionMatrix();
 
     this.three.setSize(w, h, false);
