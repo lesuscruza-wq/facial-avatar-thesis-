@@ -227,7 +227,8 @@ export class FaceTracker implements LandmarkStream {
     const eyeDist = Math.sqrt(dxEye * dxEye + dyEye * dyEye);
     // Normalize so the eye-to-eye distance is approximately 1.0 unit.
     // This provides a natural "unit scale" for the avatar regardless of webcam resolution.
-    const rawScale = eyeDist > 1e-5 ? 1.0 / eyeDist : 1.0;
+    // Scale down by 0.55 to make the avatar more compact and fit better in the frame.
+    const rawScale = eyeDist > 1e-5 ? (0.55 / eyeDist) : 0.55;
 
     const lmCenter = face[168] as NormalizedLandmark;
     const centerX = (lmCenter.x - 0.5) * aspect;
