@@ -1,8 +1,7 @@
 import { defineConfig } from 'vite'
 
 export default defineConfig({
-  // GitHub Pages base path (change if deployed to a user/org site: '/')
-  base: '/facial-avatar-thesis/',
+  base: '/facial-avatar-thesis-/',
   
   server: {
     host: true,
