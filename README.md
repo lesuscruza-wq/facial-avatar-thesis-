@@ -37,3 +37,36 @@ Notes:
 - Browsers require **HTTPS or localhost** for camera/microphone.
 - Click **Start** in the page to grant permissions (required for Web Audio autoplay policy).
 
+## GitHub Pages deployment
+
+### Automatic deployment (recommended)
+
+1. Push changes to `main` or `master` branch
+2. GitHub Actions will automatically build and deploy to `https://your-username.github.io/facial-avatar-thesis/`
+
+**Setup required (one time):**
+- Go to repository Settings → Pages
+- Set Source to "GitHub Actions" (recommended for modern deployments)
+- The workflow file (`.github/workflows/deploy.yml`) will handle the rest
+
+### Manual deployment
+
+Build locally:
+```bash
+npm run build
+```
+
+Then deploy the `dist/` folder to GitHub Pages using your preferred method.
+
+### Configuration notes
+
+- **Base path**: `vite.config.ts` is configured with `base: '/facial-avatar-thesis/'` for deployment to a project repository
+- **User/Org site**: If deploying to `your-username.github.io/`, change `base: '/'` in `vite.config.ts`
+- **HTTPS**: GitHub Pages provides HTTPS automatically, which is required for camera and microphone access
+
+## Build
+
+```bash
+npm run build  # Outputs to dist/
+npm run preview  # Preview production build locally
+```
