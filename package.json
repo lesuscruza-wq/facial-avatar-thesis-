@@ -1,0 +1,32 @@
+{
+  "name": "facial-avatar-thesis",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Real-time procedural facial avatar (Three.js + MediaPipe FaceMesh + Web Audio) for academic evaluation.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "server": "node server.js"
+  },
+  "dependencies": {
+    "@azure-rest/ai-vision-face": "^1.0.0-beta.3",
+    "@mediapipe/camera_utils": "^0.3.1675466862",
+    "@mediapipe/face_mesh": "^0.4.1633559619",
+    "dotenv": "^17.2.3",
+    "mediapipe": "^0.0.1-security",
+    "node-fetch": "^3.3.2",
+    "peerjs": "^1.5.5",
+    "simple-peer": "^9.11.1",
+    "stats.js": "^0.17.0",
+    "three": "^0.181.2",
+    "tslib": "^2.8.1",
+    "ws": "^8.19.0"
+  },
+  "devDependencies": {
+    "@types/three": "^0.182.0",
+    "typescript": "^5.9.3",
+    "vite": "^5.4.21"
+  }
+}
