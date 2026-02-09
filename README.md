@@ -42,7 +42,7 @@ Notes:
 ### Automatic deployment (recommended)
 
 1. Push changes to `main` or `master` branch
-2. GitHub Actions will automatically build and deploy to `https://your-username.github.io/face-avatar-thesis-/`
+2. GitHub Actions will automatically build and deploy to `https://your-username.github.io/facial-avatar-thesis-/`
 
 **Setup required (one time):**
 - Go to repository Settings → Pages
@@ -61,7 +61,7 @@ Then deploy the `docs/` folder to GitHub Pages using your preferred method.
 ### Configuration notes
 
 - **Build output**: `vite.config.ts` is configured to output to `docs/` (GitHub Pages standard)
-- **Base path**: `base: '/face-avatar-thesis-/'` for deployment to the project repository
+- **Base path**: `base: '/facial-avatar-thesis-/'` for deployment to the project repository
 - **User/Org site**: If deploying to `your-username.github.io/`, change `base: '/'` in `vite.config.ts`
 - **HTTPS**: GitHub Pages provides HTTPS automatically, which is required for camera and microphone access
 
