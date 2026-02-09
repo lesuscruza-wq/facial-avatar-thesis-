@@ -4,7 +4,8 @@ import type { NormalizedLandmark, Results } from '@mediapipe/face_mesh';
 export const FACEMESH_LANDMARK_COUNT = 468;
 
 // Adjustable vertical offset (higher = avatar moves up). Tweak this value as needed.
-export const FACE_VERTICAL_OFFSET = 0.90;
+// Start with a stronger offset; increase if avatar still sits too low in the viewport.
+export const FACE_VERTICAL_OFFSET = 1.80;
 
 export interface FaceTrackerOptions {
   // Temporal smoothing of landmark positions to reduce jitter.
