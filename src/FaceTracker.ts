@@ -104,17 +104,44 @@ export class FaceTracker implements LandmarkStream {
   public async init(): Promise<void> {
     this.dispose();
 
-    // Dynamic import to ensure proper module resolution in Vite
-    const faceMeshModule = await import('@mediapipe/face_mesh');
-    const FaceMeshClass = faceMeshModule.FaceMesh || (faceMeshModule as any).default?.FaceMesh || faceMeshModule.default;
+    // Load FaceMesh from CDN to ensure correct module resolution
+    const cdnBase = 'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/';
+    
+    // Load the main module from CDN
+    const scriptUrl = cdnBase + 'face_mesh.js';
+    
+    // Use dynamic import with a timeout fallback
+    let FaceMeshClass;
+    try {
+      // Try to import from the bundled module first
+      const module = await import('@mediapipe/face_mesh');
+      FaceMeshClass = (module as any).FaceMesh || module.default;
+    } catch (e) {
+      // Fallback: load from global window object if available
+      if ((window as any).FaceMesh) {
+        FaceMeshClass = (window as any).FaceMesh;
+      } else {
+        // Last resort: load the script dynamically
+        await new Promise<void>((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = scriptUrl;
+          script.onload = () => {
+            FaceMeshClass = (window as any).FaceMesh;
+            if (!FaceMeshClass) {
+              reject(new Error('FaceMesh not found after script load'));
+            } else {
+              resolve();
+            }
+          };
+          script.onerror = () => reject(new Error(`Failed to load ${scriptUrl}`));
+          document.head.appendChild(script);
+        });
+      }
+    }
 
     if (!FaceMeshClass) {
       throw new Error('Failed to load FaceMesh from @mediapipe/face_mesh');
     }
-
-    // MediaPipe FaceMesh loads some WASM/assets. We deliberately keep it CDN-hosted
-    // to avoid bundler-specific static asset configuration for thesis code.
-    const cdnBase = 'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/';
 
     const faceMesh = new FaceMeshClass({
       locateFile: (file: string) => `${cdnBase}${file}`
