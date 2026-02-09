@@ -2,17 +2,11 @@ import { defineConfig } from 'vite'
 
 export default defineConfig({
   base: '/facial-avatar-thesis-/',
-  
-  server: {
-    host: true,
-    port: 5173,
-    allowedHosts: 'all'
-  },
-  
+
   build: {
-    outDir: 'dist',
+    outDir: 'docs',
     sourcemap: false,
-    minify: 'terser',
+    minify: 'esbuild',
     rollupOptions: {
       output: {
         manualChunks: {
