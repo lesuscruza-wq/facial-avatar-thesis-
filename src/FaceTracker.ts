@@ -1,4 +1,5 @@
-import { FaceMesh, type NormalizedLandmark, type Results } from '@mediapipe/face_mesh';
+// Types from MediaPipe FaceMesh (imported dynamically in init())
+import type { NormalizedLandmark, Results } from '@mediapipe/face_mesh';
 
 export const FACEMESH_LANDMARK_COUNT = 468;
 
@@ -103,11 +104,19 @@ export class FaceTracker implements LandmarkStream {
   public async init(): Promise<void> {
     this.dispose();
 
+    // Dynamic import to ensure proper module resolution in Vite
+    const faceMeshModule = await import('@mediapipe/face_mesh');
+    const FaceMeshClass = faceMeshModule.FaceMesh || (faceMeshModule as any).default?.FaceMesh || faceMeshModule.default;
+
+    if (!FaceMeshClass) {
+      throw new Error('Failed to load FaceMesh from @mediapipe/face_mesh');
+    }
+
     // MediaPipe FaceMesh loads some WASM/assets. We deliberately keep it CDN-hosted
     // to avoid bundler-specific static asset configuration for thesis code.
     const cdnBase = 'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/';
 
-    const faceMesh = new FaceMesh({
+    const faceMesh = new FaceMeshClass({
       locateFile: (file: string) => `${cdnBase}${file}`
     });
 
