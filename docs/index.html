@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Face Avatar P2P</title>
+  <script type="module" crossorigin src="/facial-avatar-thesis/assets/index-DEfs2h7x.js"></script>
+  <link rel="modulepreload" crossorigin href="/facial-avatar-thesis/assets/peerjs-DG2MMewn.js">
+  <link rel="modulepreload" crossorigin href="/facial-avatar-thesis/assets/vendor-qxlAjtwo.js">
+  <link rel="stylesheet" crossorigin href="/facial-avatar-thesis/assets/index-k2pq1q75.css">
+</head>
+<body>
+
+  <div id="app">
+    <div class="top-bar">
+      <div class="room">
+        <strong>🆔 Room:</strong>
+        <span id="roomId" style="font-family: monospace; color: #42a5f5;">---</span>
+      </div>
+      <div class="peer">
+        <strong>👤 Peer ID:</strong>
+        <span id="peerId" style="font-family: monospace; color: #7efcff;">---</span>
+      </div>
+      <div style="flex:1"></div>
+      <button id="startBtn">🎥 Iniciar cámara</button>
+      <button id="callBtn" disabled>📞 Llamar</button>
+      <button id="hangupBtn" disabled>❌ Colgar</button>
+    </div>
+
+    <p id="noteV" style="padding:8px 12px; margin:0"></p>
+
+    <div class="stage">
+      <canvas id="overlay"></canvas>
+      <video id="localVideo" autoplay muted playsinline></video>
+      <video id="remoteVideo" autoplay playsinline></video>
+    </div>
+  </div>
+
+</body>
+</html>
+
