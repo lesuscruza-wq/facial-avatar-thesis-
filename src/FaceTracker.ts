@@ -104,15 +104,16 @@ export class FaceTracker implements LandmarkStream {
   public async init(): Promise<void> {
     this.dispose();
 
-    const cdnBase = 'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/';
+    // Use unpkg.com for better UMD module support
+    const cdnBase = 'https://unpkg.com/@mediapipe/face_mesh@0.4.1633559619/';
 
-    // Load the UMD bundle that includes everything needed
-    await this.loadScript(cdnBase + 'face_mesh.min.js');
+    // Load the UMD bundle
+    await this.loadScript(cdnBase + 'face_mesh.js');
 
     // Get FaceMesh from global window object
     const FaceMeshClass = (window as any).FaceMesh;
     if (!FaceMeshClass) {
-      throw new Error('Failed to load FaceMesh: window.FaceMesh is not defined. Check if face_mesh.min.js loaded correctly.');
+      throw new Error('Failed to load FaceMesh: window.FaceMesh is not defined');
     }
 
     const faceMesh = new FaceMeshClass({
@@ -133,20 +134,13 @@ export class FaceTracker implements LandmarkStream {
 
   private loadScript(src: string): Promise<void> {
     return new Promise((resolve, reject) => {
-      // Check if script is already loaded
-      const existing = document.querySelector(`script[src="${src}"]`);
-      if (existing) {
-        // Give it a moment to execute
-        setTimeout(resolve, 100);
-        return;
-      }
-
       const script = document.createElement('script');
       script.src = src;
       script.async = true;
-      script.type = 'text/javascript';
+      script.defer = true;
       
       const timeoutId = setTimeout(() => {
+        document.head.removeChild(script);
         reject(new Error(`Timeout loading script: ${src}`));
       }, 30000);
       
@@ -156,6 +150,7 @@ export class FaceTracker implements LandmarkStream {
       };
       script.onerror = () => {
         clearTimeout(timeoutId);
+        document.head.removeChild(script);
         reject(new Error(`Failed to load script: ${src}`));
       };
       
