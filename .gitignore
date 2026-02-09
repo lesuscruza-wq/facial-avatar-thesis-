@@ -42,12 +42,3 @@ coverage/
 .eslintcache
 tmp/
 
-# TypeScript
-*.tsbuildinfo
-
-# Three.js local assets (ignore ONLY if you do NOT want to commit them to the repo)
-# Remove these lines if those assets are required in production
-*.glb
-*.gltf
-*.bin
-
