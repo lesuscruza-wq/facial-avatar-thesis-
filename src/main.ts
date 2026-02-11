@@ -53,7 +53,9 @@ const callBtn = document.getElementById('callBtn') as HTMLButtonElement;
 const hangupBtn = document.getElementById('hangupBtn') as HTMLButtonElement;
 const localVideo = document.getElementById('localVideo') as HTMLVideoElement;
 const remoteVideo = document.getElementById('remoteVideo') as HTMLVideoElement;
-const overlayCanvas = document.getElementById('overlay') as HTMLCanvasElement;
+// Two canvases: one for Three.js (WebGL) and one for 2D overlay debugging
+const threeCanvas = document.getElementById('threeCanvas') as HTMLCanvasElement;
+const overlay2d = document.getElementById('overlay2d') as HTMLCanvasElement;
 const noteV = document.querySelector('#noteV') as HTMLElement;
 const roomId = document.getElementById('roomId') as HTMLElement;
 const peerIdEl = document.getElementById('peerId') as HTMLElement;
@@ -68,8 +70,8 @@ peerClient.onOpen = (id) => {
   if (peerIdEl) peerIdEl.textContent = id;
 };
 
-// 3D Renderer setup
-const renderer = new Renderer(overlayCanvas);
+// 3D Renderer setup (pass the WebGL canvas)
+const renderer = new Renderer(threeCanvas);
 const meshBuilder = new FaceMeshBuilder();
 
 // ✅ UN ÚNICO mesh en la escena (TU avatar)
@@ -124,6 +126,33 @@ async function renderLoop() {
   // Render
   renderer.renderFrame();
 
+  // Debug overlay: draw remote landmarks (if present)
+  try {
+    const ctx = overlay2d.getContext('2d');
+    if (ctx) {
+      ctx.clearRect(0, 0, overlay2d.width, overlay2d.height);
+      const lm = remoteStream.getLatestLandmarks();
+      if (lm) {
+        const w = overlay2d.width;
+        const h = overlay2d.height;
+        const aspect = w / Math.max(1, h);
+        ctx.fillStyle = '#7efcff';
+        for (let i = 0; i < lm.length / 3; i++) {
+          const x = lm[3 * i + 0];
+          const y = lm[3 * i + 1];
+          const px = (x / (2 * aspect) + 0.5) * w;
+          const py = (0.5 - 0.5 * y) * h;
+          ctx.beginPath();
+          ctx.arc(px, py, 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    }
+  } catch (err) {
+    // overlay drawing should never crash the render loop
+    console.warn('Overlay draw error:', err);
+  }
+
   requestAnimationFrame(renderLoop);
 }
 
@@ -147,10 +176,12 @@ startBtn.onclick = async () => {
     noteV.textContent = '⏳ Loading MediaPipe...';
     await faceTracker.init();
 
-    // Setup canvas size
-    const rect = overlayCanvas.parentElement?.getBoundingClientRect() || { width: 640, height: 480 };
-    overlayCanvas.width = rect.width;
-    overlayCanvas.height = rect.height;
+    // Setup canvas size for both threeCanvas (WebGL) and overlay2d (2D debug)
+    const rect = threeCanvas.parentElement?.getBoundingClientRect() || { width: 640, height: 480 };
+    threeCanvas.width = rect.width;
+    threeCanvas.height = rect.height;
+    overlay2d.width = rect.width;
+    overlay2d.height = rect.height;
     renderer.resize(rect.width, rect.height);
 
     // Start render loop
