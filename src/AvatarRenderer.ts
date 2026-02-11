@@ -447,7 +447,7 @@ function updateEyeballWithGaze(
 
   // Place eyeball FORWARD (positive Z) so it's visible on the face surface
   // cz is usually around -0.3 to 0.3 in normalized space
-  eyeSclera.position.set(cx, cy, cz + 0.45 * r);
+  eyeSclera.position.set(cx, cy, cz + 0.6 * r);
   eyeSclera.scale.setScalar(r);
 
   // GAZE TRACKING: Iris rotation
