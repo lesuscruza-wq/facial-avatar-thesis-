@@ -64,7 +64,7 @@ export class AvatarRenderer {
       color: 0xd6a28f,
       metalness: 0.02,
       roughness: 0.52,
-      side: THREE.DoubleSide
+      side: THREE.FrontSide
     });
 
     this.mesh = new THREE.Mesh(builder.geometry, material);
@@ -442,12 +442,12 @@ function updateEyeballWithGaze(
   const cz = 0.5 * (az + bz);
 
   const eyeWidth = dist3(ax, ay, az, bx, by, bz);
-  // Eyeball radius increased from 0.26 to 0.50 for better visibility
-  const r = Math.max(0.015, 0.50 * eyeWidth);
+  // Eyeball radius: 0.28x eye width for realistic proportions
+  const r = Math.max(0.01, 0.28 * eyeWidth);
 
   // Place eyeball FORWARD (positive Z) so it's visible on the face surface
   // cz is usually around -0.3 to 0.3 in normalized space
-  eyeSclera.position.set(cx, cy, cz + 0.15 * r);
+  eyeSclera.position.set(cx, cy, cz + 0.4 * r);
   eyeSclera.scale.setScalar(r);
 
   // GAZE TRACKING: Iris rotation
