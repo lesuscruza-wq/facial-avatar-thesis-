@@ -37,10 +37,16 @@ export class AvatarRenderer {
   private hasLast = false;
 
   // Procedural eyeballs for depth/realism cues (no external assets).
-  private readonly leftEyeBall: THREE.Mesh<THREE.SphereGeometry, THREE.MeshStandardMaterial>;
-  private readonly rightEyeBall: THREE.Mesh<THREE.SphereGeometry, THREE.MeshStandardMaterial>;
-  private readonly leftPupil: THREE.Mesh<THREE.CircleGeometry, THREE.MeshStandardMaterial>;
-  private readonly rightPupil: THREE.Mesh<THREE.CircleGeometry, THREE.MeshStandardMaterial>;
+  // Left eye structure: sclera (white sphere) + iris container (rotatable) + iris + pupil
+  private readonly leftEyeSclera: THREE.Mesh<THREE.SphereGeometry, THREE.MeshStandardMaterial>;
+  private readonly leftIrisContainer: THREE.Object3D = new THREE.Object3D();
+  private readonly leftIris: THREE.Mesh<THREE.SphereGeometry, THREE.MeshStandardMaterial>;
+  private readonly leftPupil: THREE.Mesh<THREE.SphereGeometry, THREE.MeshStandardMaterial>;
+  // Right eye structure
+  private readonly rightEyeSclera: THREE.Mesh<THREE.SphereGeometry, THREE.MeshStandardMaterial>;
+  private readonly rightIrisContainer: THREE.Object3D = new THREE.Object3D();
+  private readonly rightIris: THREE.Mesh<THREE.SphereGeometry, THREE.MeshStandardMaterial>;
+  private readonly rightPupil: THREE.Mesh<THREE.SphereGeometry, THREE.MeshStandardMaterial>;
 
   // Blink state smoothing (avoids twitchy eyelids).
   private blinkL = 0;
@@ -64,36 +70,68 @@ export class AvatarRenderer {
     this.mesh = new THREE.Mesh(builder.geometry, material);
     this.mesh.frustumCulled = false; // Face stays near camera; frustum culling can flicker due to bounding updates.
 
-    // Eyeballs (procedural): a white sclera sphere + a small pupil disc.
-    const eyeMaterial = new THREE.MeshStandardMaterial({
-      color: 0xf2f4f7,
+    // Eyeballs (procedural): realistic 3D eye structure
+    // Sclera (white part)
+    const scleraMaterial = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
       metalness: 0.0,
-      roughness: 0.18
+      roughness: 0.15
     });
-    const pupilMaterial = new THREE.MeshStandardMaterial({
-      color: 0x0b0b0c,
+    
+    // Iris (colored part - blue-ish)
+    const irisMaterial = new THREE.MeshStandardMaterial({
+      color: 0x7b9fc4,
       metalness: 0.0,
-      roughness: 0.45
+      roughness: 0.4
+    });
+    
+    // Pupil (black, very small)
+    const pupilMaterial = new THREE.MeshStandardMaterial({
+      color: 0x0a0a0a,
+      metalness: 0.0,
+      roughness: 0.6
     });
 
     // Geometry is re-used; scale is updated per frame from landmark-derived eye width.
-    const eyeGeom = new THREE.SphereGeometry(1, 18, 14);
-    const pupilGeom = new THREE.CircleGeometry(0.35, 18);
+    const scleraGeom = new THREE.SphereGeometry(1, 20, 16);
+    const irisGeom = new THREE.SphereGeometry(1, 16, 12);
+    const pupilGeom = new THREE.SphereGeometry(1, 12, 10);
 
-    this.leftEyeBall = new THREE.Mesh(eyeGeom, eyeMaterial);
-    this.rightEyeBall = new THREE.Mesh(eyeGeom, eyeMaterial);
+    // LEFT EYE
+    this.leftEyeSclera = new THREE.Mesh(scleraGeom, scleraMaterial);
+    this.leftIris = new THREE.Mesh(irisGeom, irisMaterial);
     this.leftPupil = new THREE.Mesh(pupilGeom, pupilMaterial);
+    
+    // Scale iris (0.5x) and pupil (0.25x) relative to sclera
+    this.leftIris.scale.setScalar(0.5);
+    this.leftPupil.scale.setScalar(0.25);
+    
+    // Position iris and pupil on surface facing camera
+    this.leftIris.position.z = 1.0;
+    this.leftPupil.position.z = 1.1;
+    
+    // Build structure: iris container holds iris + pupil
+    this.leftIrisContainer.add(this.leftIris);
+    this.leftIrisContainer.add(this.leftPupil);
+    this.leftEyeSclera.add(this.leftIrisContainer);
+
+    // RIGHT EYE (same structure, mirrored)
+    this.rightEyeSclera = new THREE.Mesh(scleraGeom, scleraMaterial);
+    this.rightIris = new THREE.Mesh(irisGeom, irisMaterial);
     this.rightPupil = new THREE.Mesh(pupilGeom, pupilMaterial);
+    
+    this.rightIris.scale.setScalar(0.5);
+    this.rightPupil.scale.setScalar(0.25);
+    
+    this.rightIris.position.z = 1.0;
+    this.rightPupil.position.z = 1.1;
+    
+    this.rightIrisContainer.add(this.rightIris);
+    this.rightIrisContainer.add(this.rightPupil);
+    this.rightEyeSclera.add(this.rightIrisContainer);
 
-    // Place pupils on the eyeball surface facing the camera.
-    this.leftPupil.position.set(0, 0, 1.01);
-    this.rightPupil.position.set(0, 0, 1.01);
-
-    this.leftEyeBall.add(this.leftPupil);
-    this.rightEyeBall.add(this.rightPupil);
-
-    this.mesh.add(this.leftEyeBall);
-    this.mesh.add(this.rightEyeBall);
+    this.mesh.add(this.leftEyeSclera);
+    this.mesh.add(this.rightEyeSclera);
   }
 
   /**
@@ -268,11 +306,12 @@ export class AvatarRenderer {
 
   private updateEyeballs(): void {
     const pos = this.builder.position.array as Float32Array;
+    const landmarks = this.builder.position.array as Float32Array; // same array
 
     // Left eye: corners 33 (outer), 133 (inner)
-    updateEyeballFromCorners(pos, 33, 133, this.leftEyeBall);
+    updateEyeballWithGaze(pos, landmarks, 33, 133, this.leftEyeSclera, this.leftIrisContainer, this.blinkL);
     // Right eye: corners 263 (outer), 362 (inner)
-    updateEyeballFromCorners(pos, 263, 362, this.rightEyeBall);
+    updateEyeballWithGaze(pos, landmarks, 263, 362, this.rightEyeSclera, this.rightIrisContainer, this.blinkR);
   }
 }
 
@@ -371,7 +410,23 @@ function deformEyeRing(pos: Float32Array, cx: number, cy: number, cz: number, bl
 // Procedural eyeballs
 // ---------------------------
 
-function updateEyeballFromCorners(pos: Float32Array, cornerA: number, cornerB: number, eye: THREE.Object3D): void {
+/**
+ * Updates eyeball position, scale, gaze direction, and blink effect.
+ * 
+ * - Positions sclera at eye center
+ * - Scales eyeball based on eye width (human proportions)
+ * - Rotates iris container for gaze tracking (simplified: just look forward)
+ * - Applies blink by scaling iris vertically
+ */
+function updateEyeballWithGaze(
+  pos: Float32Array,
+  landmarks: Float32Array,
+  cornerA: number,
+  cornerB: number,
+  eyeSclera: THREE.Object3D,
+  irisContainer: THREE.Object3D,
+  blinkAmount: number
+): void {
   const a = 3 * cornerA;
   const b = 3 * cornerB;
 
@@ -387,10 +442,27 @@ function updateEyeballFromCorners(pos: Float32Array, cornerA: number, cornerB: n
   const cz = 0.5 * (az + bz);
 
   const eyeWidth = dist3(ax, ay, az, bx, by, bz);
-  // Eyeball radius is a fraction of the eye width. This gives human-like proportions in normalized space.
-  const r = Math.max(0.01, 0.26 * eyeWidth);
+  // Eyeball radius increased from 0.26 to 0.50 for better visibility
+  const r = Math.max(0.015, 0.50 * eyeWidth);
 
-  // Place eyeball slightly behind the eyelid contour along -Z (into the head).
-  eye.position.set(cx, cy, cz - 0.70 * r);
-  eye.scale.setScalar(r);
+  // Place eyeball FORWARD (positive Z) so it's visible on the face surface
+  // cz is usually around -0.3 to 0.3 in normalized space
+  eyeSclera.position.set(cx, cy, cz + 0.15 * r);
+  eyeSclera.scale.setScalar(r);
+
+  // GAZE TRACKING: Iris rotation
+  // For now, a simplified approach: iris looks slightly forward/down
+  // In a full implementation, use nose/mouth landmarks or a separate gaze model
+  const gazeX = -0.15; // slight downward tilt
+  const gazeY = 0.0;   // centered horizontally
+  const gazeZ = 0.05;  // slight forward tilt
+  
+  irisContainer.rotation.x = gazeX;
+  irisContainer.rotation.y = gazeY;
+  irisContainer.rotation.z = gazeZ;
+
+  // BLINK EFFECT: Scale iris vertically to simulate eyelid closure
+  // 0 = open, 1 = fully closed
+  const blinkScale = Math.max(0.0, 1.0 - blinkAmount * 1.2);
+  irisContainer.scale.y = blinkScale;
 }
