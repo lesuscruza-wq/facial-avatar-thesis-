@@ -5,6 +5,7 @@ import { FaceTracker, type LandmarkStream } from './FaceTracker';
 import { AvatarRenderer } from './AvatarRenderer';
 import { FaceMeshBuilder } from './FaceMeshBuilder';
 import { VideoInput } from './VideoInput';
+import { capturePhotoFromCamera } from './PhotoCapture';
 
 console.log('🚀 main.ts loaded');
 
@@ -74,15 +75,35 @@ peerClient.onOpen = (id) => {
 const renderer = new Renderer(threeCanvas);
 const meshBuilder = new FaceMeshBuilder();
 
-// ✅ UN ÚNICO mesh en la escena (TU avatar)
+// 🚀 PASO 1 — Crear la VideoTexture
+import * as THREE from 'three';
+let faceTexture: THREE.CanvasTexture | null = null;
+let avatarMaterial: THREE.MeshStandardMaterial | null = null;
+
 const avatar = new AvatarRenderer(meshBuilder, {
   jawOpenAmount: 0.18,
   smoothingIterations: 1,
   smoothingAlpha: 0.14
 });
 
+
+async function captureAndApplyPhotoTexture() {
+  // Captura la foto de la cámara
+  const canvas = await capturePhotoFromCamera();
+  // Crea la textura desde el canvas
+  faceTexture = new THREE.CanvasTexture(canvas);
+  faceTexture.flipY = false;
+  faceTexture.needsUpdate = true;
+  // Aplica la textura al material
+  avatarMaterial = new THREE.MeshStandardMaterial({
+    map: faceTexture,
+    side: THREE.DoubleSide
+  });
+  avatar.mesh.material = avatarMaterial;
+  avatar.mesh.material.needsUpdate = true;
+}
+
 renderer.scene.add(avatar.mesh);
-// Ensure avatar is exactly centered in world space; tweak `y` for fine vertical placement.
 avatar.mesh.position.set(0, 0, 0);
 // Example adjustments (uncomment to nudge):
 // avatar.mesh.position.y = 0.15; // slightly up
@@ -114,44 +135,35 @@ async function renderLoop() {
   if (!isRunning) return;
 
   // ✅ CAPTURA: Process local face landmarks (SOLO para enviar)
+  let originalLandmarks: { x: number; y: number }[] | undefined = undefined;
   if (videoInput.video.readyState === HTMLMediaElement.HAVE_ENOUGH_DATA) {
     faceTracker.processFrame(videoInput.video).catch((err) => {
       console.warn('FaceTracker error:', err);
     });
+    // Get original MediaPipe landmarks for UVs
+    const latest = faceTracker as any;
+    if (latest && latest.faceMesh && latest.faceMesh.lastResults && latest.faceMesh.lastResults.multiFaceLandmarks) {
+      const face = latest.faceMesh.lastResults.multiFaceLandmarks[0];
+      if (face) {
+        originalLandmarks = face.map((lm: any) => ({ x: lm.x, y: lm.y }));
+      }
+    }
   }
 
   // ✅ RENDER: Animar avatar SOLO con landmarks REMOTOS
+  // Pasa originalLandmarks2D como propiedad del remoteStream para UVs correctos
+  const remoteLandmarks = remoteStream.getLatestLandmarks();
+  if (originalLandmarks) {
+    // Attach to remoteStream for AvatarRenderer
+    (remoteStream as any).originalLandmarks2D = originalLandmarks;
+  }
   avatar.updateFromStream(remoteStream, 0);
 
   // Render
   renderer.renderFrame();
 
   // Debug overlay: draw remote landmarks (if present)
-  try {
-    const ctx = overlay2d.getContext('2d');
-    if (ctx) {
-      ctx.clearRect(0, 0, overlay2d.width, overlay2d.height);
-      const lm = remoteStream.getLatestLandmarks();
-      if (lm) {
-        const w = overlay2d.width;
-        const h = overlay2d.height;
-        const aspect = w / Math.max(1, h);
-        ctx.fillStyle = '#7efcff';
-        for (let i = 0; i < lm.length / 3; i++) {
-          const x = lm[3 * i + 0];
-          const y = lm[3 * i + 1];
-          const px = (x / (2 * aspect) + 0.5) * w;
-          const py = (0.5 - 0.5 * y) * h;
-          ctx.beginPath();
-          ctx.arc(px, py, 2, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      }
-    }
-  } catch (err) {
-    // overlay drawing should never crash the render loop
-    console.warn('Overlay draw error:', err);
-  }
+  // ...overlay2d removed: solo avatar 3D...
 
   requestAnimationFrame(renderLoop);
 }
@@ -161,6 +173,9 @@ startBtn.onclick = async () => {
   try {
     startBtn.disabled = true;
     noteV.textContent = '⏳ Starting camera...';
+
+    // 🚀 Captura snapshot y aplica textura fija (sin mostrar preview)
+    await captureAndApplyPhotoTexture();
 
     // ✅ Solicitar video para FaceTracker (local, no se muestra) + audio
     localStream = await navigator.mediaDevices.getUserMedia({

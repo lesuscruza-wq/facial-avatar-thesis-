@@ -1,3 +1,5 @@
+  // Últimos landmarks 2D originales (MediaPipe)
+  public latestLandmarks2D: { x: number; y: number }[] = [];
 // Types from MediaPipe FaceMesh (imported dynamically in init())
 import type { NormalizedLandmark, Results } from '@mediapipe/face_mesh';
 
@@ -202,8 +204,11 @@ export class FaceTracker implements LandmarkStream {
     const face = results.multiFaceLandmarks?.[0];
     if (!face || face.length < FACEMESH_LANDMARK_COUNT) {
       this.hasFace = false;
+      this.latestLandmarks2D = [];
       return;
     }
+  // Guardar landmarks 2D originales para UVs
+  this.latestLandmarks2D = face.map(lm => ({ x: lm.x, y: lm.y }));
 
     // We normalize landmarks into a stable "model space":
     // 1) Convert from image-normalized coordinates to an aspect-correct centered space.
