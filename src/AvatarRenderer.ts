@@ -155,8 +155,14 @@ export class AvatarRenderer {
     const targetBlinkR = blinkFromEye(landmarksToUse, 263, 362, 386, 374);
     this.updateBlinkState(targetBlinkL, targetBlinkR);
 
-    // Base geometry update.
-    this.builder.setPositionsFromLandmarks(landmarksToUse);
+    // Base geometry update: pass both 3D positions and original 2D landmarks for correct UVs
+    // landmarksToUse: Float32Array (3D positions)
+    // originalLandmarks2D: {x, y}[] (from MediaPipe, in [0,1])
+    // We expect the caller to provide both; if not available, skip update
+    const originalLandmarks2D = (stream as any).originalLandmarks2D as { x: number; y: number }[] | undefined;
+    if (originalLandmarks2D && landmarksToUse) {
+      this.builder.setPositionsFromLandmarks(landmarksToUse, originalLandmarks2D);
+    }
 
     // Optional Laplacian smoothing for more continuous, skin-like surface.
     this.builder.smoothPositions(this.smoothingIterations, this.smoothingAlpha);
