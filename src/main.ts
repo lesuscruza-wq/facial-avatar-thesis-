@@ -81,14 +81,18 @@ import * as THREE from 'three';
 let faceTexture: THREE.CanvasTexture | null = null;
 let avatarMaterial: THREE.MeshStandardMaterial | null = null;
 
+
 const avatar = new AvatarRenderer(meshBuilder, {
   jawOpenAmount: 0.18,
   smoothingIterations: 1,
   smoothingAlpha: 0.14
 });
+avatar.mesh.position.set(0, 0, 0);
+renderer.scene.add(avatar.mesh);
 
 // --- INICIALIZACIÓN AL CARGAR LA PÁGINA ---
   // --- INICIALIZACIÓN AL CARGAR LA PÁGINA ---
+// --- INICIALIZACIÓN AL CARGAR LA PÁGINA ---
 (async function initializeAvatarWithPhoto() {
     // 1. Pedir cámara y tomar foto
     const stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -111,12 +115,10 @@ const avatar = new AvatarRenderer(meshBuilder, {
     texture.flipY = false;
     texture.needsUpdate = true;
     avatar.mesh.material = new THREE.MeshStandardMaterial({
-        map: texture,
-        side: THREE.DoubleSide
+      map: texture,
+      side: THREE.DoubleSide
     });
     avatar.mesh.material.needsUpdate = true;
-    renderer.scene.add(avatar.mesh);
-    avatar.mesh.position.set(0, 0, 0);
     // Example adjustments (uncomment to nudge):
     // avatar.mesh.position.y = 0.15; // slightly up
     // avatar.mesh.position.y = -0.15; // slightly down
@@ -145,6 +147,7 @@ function lerp(prev: number, next: number, alpha: number): number {
   return prev + (next - prev) * alpha;
 }
 
+
 // Main render loop
 async function renderLoop() {
   if (!isRunning) return;
@@ -165,14 +168,17 @@ async function renderLoop() {
     }
   }
 
-  // ✅ RENDER: Animar avatar SOLO con landmarks REMOTOS
-  // Pasa originalLandmarks2D como propiedad del remoteStream para UVs correctos
+  // ✅ RENDER: Animar avatar con landmarks remotos o locales
   const remoteLandmarks = remoteStream.getLatestLandmarks();
   if (originalLandmarks) {
     // Attach to remoteStream for AvatarRenderer
     (remoteStream as any).originalLandmarks2D = originalLandmarks;
   }
-  avatar.updateFromStream(remoteStream, 0);
+  if (remoteLandmarks) {
+    avatar.updateFromStream(remoteStream, 0);
+  } else {
+    avatar.updateFromStream(faceTracker, 0);
+  }
 
   // Render
   renderer.renderFrame();
