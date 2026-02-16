@@ -88,36 +88,40 @@ const avatar = new AvatarRenderer(meshBuilder, {
 });
 
 // --- INICIALIZACIÓN AL CARGAR LA PÁGINA ---
+  // --- INICIALIZACIÓN AL CARGAR LA PÁGINA ---
 (async function initializeAvatarWithPhoto() {
-  const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-  const video = document.createElement("video");
-  video.srcObject = stream;
-  video.autoplay = true;
-  video.playsInline = true;
-  await new Promise(resolve => {
-    video.onloadedmetadata = () => resolve(true);
-  });
-  const canvas = document.createElement("canvas");
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  const ctx = canvas.getContext("2d")!;
-  ctx.drawImage(video, 0, 0);
-  stream.getTracks().forEach(t => t.stop());
-  faceTexture = new THREE.CanvasTexture(canvas);
-  faceTexture.flipY = false;
-  faceTexture.needsUpdate = true;
-  avatarMaterial = new THREE.MeshStandardMaterial({
-    map: faceTexture,
-    side: THREE.DoubleSide
-  });
-  avatar.mesh.material = avatarMaterial;
-  avatar.mesh.material.needsUpdate = true;
-  renderer.scene.add(avatar.mesh);
-  avatar.mesh.position.set(0, 0, 0);
-  // Example adjustments (uncomment to nudge):
-  // avatar.mesh.position.y = 0.15; // slightly up
-  // avatar.mesh.position.y = -0.15; // slightly down
-  console.log("📸 Foto capturada y aplicada");
+    // 1. Pedir cámara y tomar foto
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    const video = document.createElement("video");
+    video.srcObject = stream;
+    video.autoplay = true;
+    video.playsInline = true;
+    await new Promise(resolve => {
+        video.onloadedmetadata = () => resolve(true);
+    });
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d")!;
+    ctx.drawImage(video, 0, 0);
+    stream.getTracks().forEach(t => t.stop());
+
+    // 2. Crear textura y aplicarla
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.flipY = false;
+    texture.needsUpdate = true;
+    avatar.mesh.material = new THREE.MeshStandardMaterial({
+        map: texture,
+        side: THREE.DoubleSide
+    });
+    avatar.mesh.material.needsUpdate = true;
+    renderer.scene.add(avatar.mesh);
+    avatar.mesh.position.set(0, 0, 0);
+    // Example adjustments (uncomment to nudge):
+    // avatar.mesh.position.y = 0.15; // slightly up
+    // avatar.mesh.position.y = -0.15; // slightly down
+    noteV.textContent = '✅ Foto capturada. Haz click en "Iniciar cámara" para animar.';
+    startBtn.disabled = false;
 })();
 
 // Face tracking
@@ -181,42 +185,37 @@ async function renderLoop() {
 
 // B) Botón Start: getUserMedia + init FaceTracker
 startBtn.onclick = async () => {
-  try {
-    startBtn.disabled = true;
-    noteV.textContent = '⏳ Starting camera...';
+    try {
+        startBtn.disabled = true;
+        noteV.textContent = '⏳ Iniciando tracking facial...';
 
-    // ✅ Solicitar video para FaceTracker (local, no se muestra) + audio
-    localStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'user' },
-      audio: true
-    });
+        // Solo tracking, no textura
+        localStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'user' },
+            audio: true
+        });
+        videoInput.video.srcObject = localStream;
+        await videoInput.video.play();
 
-    // Feed to FaceTracker (internal, hidden)
-    videoInput.video.srcObject = localStream;
-    await videoInput.video.play();
+        noteV.textContent = '⏳ Cargando MediaPipe...';
+        await faceTracker.init();
 
-    // Init FaceTracker
-    noteV.textContent = '⏳ Loading MediaPipe...';
-    await faceTracker.init();
+        const rect = threeCanvas.parentElement?.getBoundingClientRect() || { width: 640, height: 480 };
+        threeCanvas.width = rect.width;
+        threeCanvas.height = rect.height;
+        overlay2d.width = rect.width;
+        overlay2d.height = rect.height;
+        renderer.resize(rect.width, rect.height);
 
-    // Setup canvas size for both threeCanvas (WebGL) and overlay2d (2D debug)
-    const rect = threeCanvas.parentElement?.getBoundingClientRect() || { width: 640, height: 480 };
-    threeCanvas.width = rect.width;
-    threeCanvas.height = rect.height;
-    overlay2d.width = rect.width;
-    overlay2d.height = rect.height;
-    renderer.resize(rect.width, rect.height);
+        isRunning = true;
+        requestAnimationFrame(renderLoop);
 
-    // Start render loop
-    isRunning = true;
-    requestAnimationFrame(renderLoop);
-
-    callBtn.disabled = false;
-    noteV.textContent = '✅ Camera ready. Click "Call" to connect.';
-  } catch (err) {
-    noteV.textContent = `❌ Error: ${(err as Error)?.message}`;
-    startBtn.disabled = false;
-  }
+        callBtn.disabled = false;
+        noteV.textContent = '✅ Tracking activo. Haz click en "Llamar" para conectar.';
+    } catch (err) {
+        noteV.textContent = `❌ Error: ${(err as Error)?.message}`;
+        startBtn.disabled = false;
+    }
 };
 
 // C) Botón Call: prompt for remote PeerID
