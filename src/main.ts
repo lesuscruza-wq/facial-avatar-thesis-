@@ -75,7 +75,8 @@ peerClient.onOpen = (id) => {
 const renderer = new Renderer(threeCanvas);
 const meshBuilder = new FaceMeshBuilder();
 
-// 🚀 PASO 1 — Crear la VideoTexture
+avatar.mesh.position.set(0, 0, 0);
+
 import * as THREE from 'three';
 let faceTexture: THREE.CanvasTexture | null = null;
 let avatarMaterial: THREE.MeshStandardMaterial | null = null;
@@ -86,28 +87,38 @@ const avatar = new AvatarRenderer(meshBuilder, {
   smoothingAlpha: 0.14
 });
 
-
-async function captureAndApplyPhotoTexture() {
-  // Captura la foto de la cámara
-  const canvas = await capturePhotoFromCamera();
-  // Crea la textura desde el canvas
+// --- INICIALIZACIÓN AL CARGAR LA PÁGINA ---
+(async function initializeAvatarWithPhoto() {
+  const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+  const video = document.createElement("video");
+  video.srcObject = stream;
+  video.autoplay = true;
+  video.playsInline = true;
+  await new Promise(resolve => {
+    video.onloadedmetadata = () => resolve(true);
+  });
+  const canvas = document.createElement("canvas");
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext("2d")!;
+  ctx.drawImage(video, 0, 0);
+  stream.getTracks().forEach(t => t.stop());
   faceTexture = new THREE.CanvasTexture(canvas);
   faceTexture.flipY = false;
   faceTexture.needsUpdate = true;
-  // Aplica la textura al material
   avatarMaterial = new THREE.MeshStandardMaterial({
     map: faceTexture,
     side: THREE.DoubleSide
   });
   avatar.mesh.material = avatarMaterial;
   avatar.mesh.material.needsUpdate = true;
-}
-
-renderer.scene.add(avatar.mesh);
-avatar.mesh.position.set(0, 0, 0);
-// Example adjustments (uncomment to nudge):
-// avatar.mesh.position.y = 0.15; // slightly up
-// avatar.mesh.position.y = -0.15; // slightly down
+  renderer.scene.add(avatar.mesh);
+  avatar.mesh.position.set(0, 0, 0);
+  // Example adjustments (uncomment to nudge):
+  // avatar.mesh.position.y = 0.15; // slightly up
+  // avatar.mesh.position.y = -0.15; // slightly down
+  console.log("📸 Foto capturada y aplicada");
+})();
 
 // Face tracking
 const videoInput = new VideoInput();
@@ -173,9 +184,6 @@ startBtn.onclick = async () => {
   try {
     startBtn.disabled = true;
     noteV.textContent = '⏳ Starting camera...';
-
-    // 🚀 Captura snapshot y aplica textura fija (sin mostrar preview)
-    await captureAndApplyPhotoTexture();
 
     // ✅ Solicitar video para FaceTracker (local, no se muestra) + audio
     localStream = await navigator.mediaDevices.getUserMedia({
