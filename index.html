@@ -7,6 +7,7 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👤</text></svg>" />
 </head>
 <body>
+  <input type="file" id="upload" accept="image/*" style="position:absolute;z-index:10;" />
 
   <div id="app">
     <div class="top-bar">
@@ -37,6 +38,7 @@
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh_connections.js"></script>
   <script type="module" src="./src/main.ts"></script>
 </body>
 </html>

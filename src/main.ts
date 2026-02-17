@@ -1,3 +1,38 @@
+import * as THREE from 'three';
+import { FaceMask } from './FaceMask';
+
+console.log('🚀 main.ts loaded');
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 1000);
+camera.position.z = 3;
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+const light = new THREE.DirectionalLight(0xffffff, 1);
+light.position.set(0, 0, 5);
+scene.add(light);
+scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+
+const upload = document.getElementById("upload") as HTMLInputElement;
+upload.addEventListener("change", async (e) => {
+  const file = upload.files?.[0];
+  if (!file) return;
+  const img = new Image();
+  img.src = URL.createObjectURL(file);
+  await img.decode();
+  const mask = new FaceMask();
+  const mesh = await mask.buildFromImage(img);
+
+  scene.add(mesh);
+});
+
+function animate() {
+  requestAnimationFrame(animate);
+  renderer.render(scene, camera);
+}
+
+animate();
+
 import './styles.css';
 import { PeerClient } from './PeerClient';
 import { Renderer } from './Renderer';
@@ -5,7 +40,6 @@ import { FaceTracker, type LandmarkStream } from './FaceTracker';
 import { AvatarRenderer } from './AvatarRenderer';
 import { FaceMeshBuilder } from './FaceMeshBuilder';
 import { VideoInput } from './VideoInput';
-import { capturePhotoFromCamera } from './PhotoCapture';
 
 console.log('🚀 main.ts loaded');
 
@@ -75,12 +109,9 @@ peerClient.onOpen = (id) => {
 const renderer = new Renderer(threeCanvas);
 const meshBuilder = new FaceMeshBuilder();
 
-avatar.mesh.position.set(0, 0, 0);
-
 import * as THREE from 'three';
 let faceTexture: THREE.CanvasTexture | null = null;
 let avatarMaterial: THREE.MeshStandardMaterial | null = null;
-
 
 const avatar = new AvatarRenderer(meshBuilder, {
   jawOpenAmount: 0.18,
@@ -89,42 +120,6 @@ const avatar = new AvatarRenderer(meshBuilder, {
 });
 avatar.mesh.position.set(0, 0, 0);
 renderer.scene.add(avatar.mesh);
-
-// --- INICIALIZACIÓN AL CARGAR LA PÁGINA ---
-  // --- INICIALIZACIÓN AL CARGAR LA PÁGINA ---
-// --- INICIALIZACIÓN AL CARGAR LA PÁGINA ---
-(async function initializeAvatarWithPhoto() {
-    // 1. Pedir cámara y tomar foto
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-    const video = document.createElement("video");
-    video.srcObject = stream;
-    video.autoplay = true;
-    video.playsInline = true;
-    await new Promise(resolve => {
-        video.onloadedmetadata = () => resolve(true);
-    });
-    const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext("2d")!;
-    ctx.drawImage(video, 0, 0);
-    stream.getTracks().forEach(t => t.stop());
-
-    // 2. Crear textura y aplicarla
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.flipY = false;
-    texture.needsUpdate = true;
-    avatar.mesh.material = new THREE.MeshStandardMaterial({
-      map: texture,
-      side: THREE.DoubleSide
-    });
-    avatar.mesh.material.needsUpdate = true;
-    // Example adjustments (uncomment to nudge):
-    // avatar.mesh.position.y = 0.15; // slightly up
-    // avatar.mesh.position.y = -0.15; // slightly down
-    noteV.textContent = '✅ Foto capturada. Haz click en "Iniciar cámara" para animar.';
-    startBtn.disabled = false;
-})();
 
 // Face tracking
 const videoInput = new VideoInput();
@@ -146,7 +141,6 @@ const remoteStream = new RemoteLandmarkStream();
 function lerp(prev: number, next: number, alpha: number): number {
   return prev + (next - prev) * alpha;
 }
-
 
 // Main render loop
 async function renderLoop() {
